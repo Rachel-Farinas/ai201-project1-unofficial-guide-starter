@@ -16,7 +16,7 @@
 
 ---
 This system covers student reviews and feedback of CS professors at the University of Miami. 
-This is relevant and useful because many students aren't familiar with professors' teaching style and may
+This is relevant because many students aren't familiar with professors' teaching style and may
 not personally know anyone who has experience with a certain professor. This system helps bridge that gap
 by addressing questions on teaching style, exam style, workload, and textbook relevance.
 

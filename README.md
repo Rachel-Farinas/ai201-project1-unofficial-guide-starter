@@ -134,9 +134,9 @@ Rules:
 
 **What the system returned:** "I don't have enough information to answer. There is no review about a professor named David Chapman in the provided context."
 
-**Root cause (tied to a specific pipeline stage):** The failure is in the **Embedding + Retrieval** stage. During indexing, each chunk's embedded text is the review *comment* — the professor's name is stored only in the flat metadata dict, not in the document text that Chroma embeds. When the query "Would students recommend taking David Chapman?" is embedded and compared against stored vectors, the similarity score is computed against comment text like "great lecturer, always available." Because Chapman has only 2 reviews and neither comment contains his name or the word "recommend," those 2 chunks rank outside the top-5 by cosine similarity and are never returned. The model has no Chapman context and correctly says it doesn't know — but the underlying problem is that name-based queries can't be resolved through semantic similarity on comment text alone.
+**Root cause (tied to a specific pipeline stage):** Failure in the **Retrieval** stage. Professor names are stored only in chunk metadata, not in the embedded document text (which is just the review comment). Chapman's 2 review comments don't contain his name, so they rank outside the top-5 by cosine similarity and are never returned.
 
-**What you would change to fix it:** Prepend the professor's name to the stored document text at index time (e.g., `"Professor: David Chapman\n" + comment`). This embeds the name into the vector space so that queries containing a professor's name get a direct semantic signal toward that professor's chunks, even when the comments themselves are generic.
+**What you would change to fix it:** Prepend `"Professor: David Chapman\n"` to each chunk's document text before indexing so the name is part of the embedding and name-based queries get a direct similarity signal.
 
 ---
 
@@ -145,9 +145,9 @@ Rules:
 <!-- Reflect on how planning.md shaped your implementation.
      Answer both questions with at least 2–3 sentences each. -->
 
-**One way the spec helped you during implementation:** The Chunking Strategy section of planning.md specified concrete numbers — MAX_CHARS = 1000 and OVERLAP_CHARS = 200 — which translated directly into constants in `config.py` without any guesswork. Having the reasoning written down ("self-contained review comments, conservative overlap as safeguard for longer reviews") also made it easy to justify keeping each CSV row as a single chunk rather than splitting on arbitrary character counts, since reviews are already short and bounded by the row structure.
+**One way the spec helped you during implementation:** The Chunking Strategy section gave concrete numbers (MAX_CHARS = 1000, OVERLAP_CHARS = 200) that translated directly into `config.py` constants, removing guesswork about chunk sizing.
 
-**One way your implementation diverged from the spec, and why:** The evaluation plan in planning.md listed "Blake Rosenberg" as a professor for Q4. During testing, the system correctly reported no reviews for Blake Rosenberg — because the database contains "Burton Rosenberg," not "Blake." The name mismatch in the spec was discovered only at evaluation time, which surfaced a broader design issue: the system has no fuzzy name matching. A user who misspells or partially recalls a professor's name will get a "not enough information" response even when that professor's reviews are in the index. The implementation stayed true to exact-name matching at the embedding level, which the spec did not anticipate as a failure mode.
+**One way your implementation diverged from the spec, and why:** planning.md listed "Blake Rosenberg" for Q4, but the database contains "Burton Rosenberg." The typo was caught only at eval time and highlighted that the system has no fuzzy name matching — an edge case the spec didn't anticipate.
 
 ---
 
@@ -164,12 +164,12 @@ Rules:
 
 **Instance 1**
 
-- *What I gave the AI:* The Chunking Strategy section from planning.md and the skeleton of `ingest.py`, asking it to implement `split_text()` and `chunk_data()` using 1000-char chunks with 200-char overlap.
-- *What it produced:* A `split_text()` that splits on sentence boundaries (`. `), packs sentences up to MAX_CHARS, and seeds the next chunk with the trailing OVERLAP_CHARS of the previous one. `chunk_data()` looped over professors, skipped empty comments, called `split_text()`, and returned a flat list of chunk dicts with nested Professor/Review structure.
-- *What I changed or overrode:* The AI's initial `chunk_data()` used a global chunk counter for IDs. I overrode it to use `f"{name}-{review_index}-{piece_index}"` so IDs encode which professor and review they came from, making debugging and tracing much easier.
+- *What I gave the AI:* The Chunking Strategy section from planning.md and the `ingest.py` skeleton, asking it to implement `split_text()` and `chunk_data()` with 1000-char chunks and 200-char overlap.
+- *What it produced:* `split_text()` splitting on sentence boundaries with overlap seeding, and `chunk_data()` returning a flat list of nested chunk dicts.
+- *What I changed or overrode:* Replaced the AI's global chunk counter IDs with `f"{name}-{review_index}-{piece_index}"` so each ID encodes its source for easier debugging.
 
 **Instance 2**
 
-- *What I gave the AI:* The runtime traceback showing a `KeyError: 'Professor'` when `format_context()` was called, along with both `retriever.py` and `generator.py`.
-- *What it produced:* An explanation that `retrieve()` returns flat chunks (keys: `id`, `text`, `metadata`) while `format_context()` was written to consume nested chunks (keys: `Professor`, `Review`). It produced a corrected `format_context()` that reads `chunk["metadata"]["professor"]`, `chunk["text"]`, and the flat metadata keys instead of the nested ones.
-- *What I changed or overrode:* The AI also fixed the `lines` list bug in the same pass — the original code reassigned `lines` as a string after the loop rather than appending to it, so only the last chunk was ever included in the context. I kept both fixes since both were genuine bugs.
+- *What I gave the AI:* The `KeyError: 'Professor'` traceback from `format_context()`, plus `retriever.py` and `generator.py`.
+- *What it produced:* A fix switching `chunk["Professor"]["Name"]` → `chunk["metadata"]["professor"]` and `chunk["Review"]["Comment"]` → `chunk["text"]` to match the flat structure `retrieve()` actually returns.
+- *What I changed or overrode:* Kept the AI's simultaneous fix of the `lines` list bug, where the original code overwrote `lines` as a string after the loop instead of appending to it.

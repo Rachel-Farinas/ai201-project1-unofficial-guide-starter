@@ -28,16 +28,14 @@ by addressing questions on teaching style, exam style, workload, and textbook re
 
 | # | Source | Type | URL or file path |
 |---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 | A Fahad_reviews.csv | CSV | ./documents |
+| 2 | Abdul Hamid Samra_reviews.csv | CSV | ./documents |
+| 3 | Akmal Younis_reviews.csv | CSV | ./documents |
+| 4 | Alan Lazer_reviews.csv | CSV | ./documents |
+| 5 | Alexander Korogodsky_reviews.csv | CSV | ./documents |
+...
+| 178 | Zheng Wang_reviews.csv | CSV | ./documents |
+| 179 | professors_list.csv | CSV | ./documents |
 
 ---
 

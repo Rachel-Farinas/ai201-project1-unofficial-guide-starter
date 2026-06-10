@@ -120,49 +120,6 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
      "I'll give Claude my Chunking Strategy section and ask it to implement chunk_text()
      with my specified chunk size and overlap" is a plan. -->
 
-**Milestone 3 — Ingestion and chunking:**
-
-**Milestone 4 — Embedding and retrieval:**
-
-**Milestone 5 — Generation and interface:**
-
-Here's the full section:
-
----
-
-## Evaluation Plan
-
-| # | Question | Expected answer |
-|---|----------|-----------------|
-| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough/difficult, recommend the textbook and outside resources |
-| 2 | Would students recommend taking David Chapman? | Yes — reviews describe him as caring and a good lecturer |
-| 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency from his reviews |
-| 4 | Who is easier — Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments |
-| 5 | Does Odelia Schwartz have reviews mentioning exams? | System should return relevant review excerpts or say not enough information if none mention exams |
-
----
-
-## Anticipated Challenges
-
-1. **Short or vague reviews** — many RMP comments are 1-2 sentences with little substance (e.g. "great professor"), which may retrieve as top results but not actually answer the query, producing low-quality grounded responses.
-2. **Professor name mismatches** — if a user queries "Sarkar" instead of "Dilip Sarkar", the retriever may fail to match the chunk metadata, returning no results even when relevant reviews exist.
-
----
-
-## Architecture
-
-```
-Document Ingestion     Chunking              Embedding + Vector Store     Retrieval         Generation
-──────────────────     ────────              ────────────────────────     ─────────         ──────────
-professors_list.csv    MAX_CHARS=1000        all-MiniLM-L6-v2             top-k query       Groq
-*_reviews.csv      →   OVERLAP=200       →   sentence-transformers     →  ChromaDB       →  llama-3.3-70b
-(csv.DictReader)       per-review chunks     ChromaDB                     similarity        -versatile
-                                                                           search
-```
-
----
-
-## AI Tool Plan
 
 | Stage | Tool | Input | Expected output | Verification |
 |-------|------|-------|-----------------|--------------|

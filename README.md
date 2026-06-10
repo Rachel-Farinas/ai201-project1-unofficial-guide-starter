@@ -17,14 +17,18 @@
 ---
 This system covers student reviews and feedback of CS professors at the University of Miami. 
 This is relevant because many students aren't familiar with professors' teaching style and may
-not personally know anyone who has experience with a certain professor. This system helps bridge that gap
-by addressing questions on teaching style, exam style, workload, and textbook relevance.
+not personally know anyone who has experience with a certain professor. This system helps bridge that gap by addressing questions on teaching style, exam style, workload, and textbook relevance.
 
 ## Document Sources
 
 <!-- List every source you collected documents from.
      Be specific: include URLs, subreddit names, forum thread titles, or file names.
      Aim for variety — sources that together cover different subtopics or perspectives. -->
+
+Sources include 178 professor CSV files, with each file containing Rate My Professor reviews for that professor and corresponding metadata (Date, Quality, Difficulty, Tags, Course, For Credit, Attendance, Grade, Textbook, Thumbs Up, Thumbs Down). 
+
+Also includes a list of all professors scraped and their metadata (Name, Department, Overall Rating, Number of Ratings, Would Take Again Percent, Level of Difficulty).
+
 
 | # | Source | Type | URL or file path |
 |---|--------|------|-----------------|

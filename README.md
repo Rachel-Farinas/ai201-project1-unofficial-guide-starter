@@ -76,6 +76,8 @@ to what is contained in each row makes the most sense here.
 
 **Production tradeoff reflection:**
 
+`all-MiniLM-L6-v2` is fast, runs entirely locally, and requires no API key — ideal for development. Its main limitation is a 256-token context window, which means longer reviews that get split at chunk boundaries lose cross-sentence context at the embedding stage. For production I would weigh three tradeoffs: (1) **accuracy on domain-specific text** — a model fine-tuned on review-style or education text would produce tighter semantic matches for informal phrasing like "easy grader" or "curves a lot," where general-purpose embeddings may miss intent; (2) **context length** — a model like `text-embedding-3-small` (8191-token window) would eliminate most chunking concerns for long reviews; (3) **latency vs. quality** — a hosted API embedding model is slower per query and adds cost, but typically outperforms the local 22 M-parameter MiniLM on recall for nuanced queries. For this corpus of short review comments, MiniLM's 256-token window is rarely the bottleneck, so the main production upgrade would be domain fine-tuning or a larger general-purpose model.
+
 ---
 
 ## Grounded Generation
@@ -113,11 +115,11 @@ Rules:
 
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough; difficult tests and arbitrary grading mentioned | Confirmed Sarkar's difficulty rating (4.0–5.0 across chunks), quoted "He is difficult, but the material is not" and "difficult tests" and "arbitrary grading"; cited [1], [4], [5] | Relevant | Accurate |
+| 2 | Would students recommend taking David Chapman? | Yes — reviews describe him as caring and a good lecturer | "I don't have enough information to answer. There is no review about David Chapman in the provided context." | Off-target | Inaccurate |
+| 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency | Cited difficulty rating of 3.3 and quoted "The course work is tough, but he makes it feel like its no big deal"; acknowledged Sutcliffe is manageable due to his teaching style | Relevant | Partially accurate |
+| 4 | Who is easier, Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments | "I don't have enough information to answer. There is no review for Blake Rosenberg in the provided context." | Off-target | Accurate (no "Blake Rosenberg" exists in the database; professor is Burton Rosenberg) |
+| 5 | Does Odelia Schwartz have reviews mentioning exams? | Return relevant review excerpts or say not enough info if none mention exams | Found and cited a review stating "her exams are easy if you have paid attention in class" | Relevant | Accurate |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
@@ -137,13 +139,13 @@ Rules:
      "The embedding model treated the professor's nickname as out-of-vocabulary and returned
      results from an unrelated review" is an explanation. -->
 
-**Question that failed:**
+**Question that failed:** "Would students recommend taking David Chapman?"
 
-**What the system returned:**
+**What the system returned:** "I don't have enough information to answer. There is no review about a professor named David Chapman in the provided context."
 
-**Root cause (tied to a specific pipeline stage):**
+**Root cause (tied to a specific pipeline stage):** The failure is in the **Embedding + Retrieval** stage. During indexing, each chunk's embedded text is the review *comment* — the professor's name is stored only in the flat metadata dict, not in the document text that Chroma embeds. When the query "Would students recommend taking David Chapman?" is embedded and compared against stored vectors, the similarity score is computed against comment text like "great lecturer, always available." Because Chapman has only 2 reviews and neither comment contains his name or the word "recommend," those 2 chunks rank outside the top-5 by cosine similarity and are never returned. The model has no Chapman context and correctly says it doesn't know — but the underlying problem is that name-based queries can't be resolved through semantic similarity on comment text alone.
 
-**What you would change to fix it:**
+**What you would change to fix it:** Prepend the professor's name to the stored document text at index time (e.g., `"Professor: David Chapman\n" + comment`). This embeds the name into the vector space so that queries containing a professor's name get a direct semantic signal toward that professor's chunks, even when the comments themselves are generic.
 
 ---
 
@@ -152,9 +154,9 @@ Rules:
 <!-- Reflect on how planning.md shaped your implementation.
      Answer both questions with at least 2–3 sentences each. -->
 
-**One way the spec helped you during implementation:**
+**One way the spec helped you during implementation:** The Chunking Strategy section of planning.md specified concrete numbers — MAX_CHARS = 1000 and OVERLAP_CHARS = 200 — which translated directly into constants in `config.py` without any guesswork. Having the reasoning written down ("self-contained review comments, conservative overlap as safeguard for longer reviews") also made it easy to justify keeping each CSV row as a single chunk rather than splitting on arbitrary character counts, since reviews are already short and bounded by the row structure.
 
-**One way your implementation diverged from the spec, and why:**
+**One way your implementation diverged from the spec, and why:** The evaluation plan in planning.md listed "Blake Rosenberg" as a professor for Q4. During testing, the system correctly reported no reviews for Blake Rosenberg — because the database contains "Burton Rosenberg," not "Blake." The name mismatch in the spec was discovered only at evaluation time, which surfaced a broader design issue: the system has no fuzzy name matching. A user who misspells or partially recalls a professor's name will get a "not enough information" response even when that professor's reviews are in the index. The implementation stayed true to exact-name matching at the embedding level, which the spec did not anticipate as a failure mode.
 
 ---
 
@@ -171,12 +173,12 @@ Rules:
 
 **Instance 1**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* The Chunking Strategy section from planning.md and the skeleton of `ingest.py`, asking it to implement `split_text()` and `chunk_data()` using 1000-char chunks with 200-char overlap.
+- *What it produced:* A `split_text()` that splits on sentence boundaries (`. `), packs sentences up to MAX_CHARS, and seeds the next chunk with the trailing OVERLAP_CHARS of the previous one. `chunk_data()` looped over professors, skipped empty comments, called `split_text()`, and returned a flat list of chunk dicts with nested Professor/Review structure.
+- *What I changed or overrode:* The AI's initial `chunk_data()` used a global chunk counter for IDs. I overrode it to use `f"{name}-{review_index}-{piece_index}"` so IDs encode which professor and review they came from, making debugging and tracing much easier.
 
 **Instance 2**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* The runtime traceback showing a `KeyError: 'Professor'` when `format_context()` was called, along with both `retriever.py` and `generator.py`.
+- *What it produced:* An explanation that `retrieve()` returns flat chunks (keys: `id`, `text`, `metadata`) while `format_context()` was written to consume nested chunks (keys: `Professor`, `Review`). It produced a corrected `format_context()` that reads `chunk["metadata"]["professor"]`, `chunk["text"]`, and the flat metadata keys instead of the nested ones.
+- *What I changed or overrode:* The AI also fixed the `lines` list bug in the same pass — the original code reassigned `lines` as a string after the loop rather than appending to it, so only the last chunk was ever included in the context. I kept both fixes since both were genuine bugs.

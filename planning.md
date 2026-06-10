@@ -79,9 +79,9 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
 | # | Question | Expected answer |
 |---|----------|-----------------|
 | 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough/difficult, recommend the textbook and outside resources |
-| 2 | Would students recommend taking David Chapman? | Yes — reviews describe him as caring and a good lecturer |
+| 2 | Would students recommend taking David Chapman? | Yes, reviews describe him as caring and a good lecturer |
 | 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency from his reviews |
-| 4 | Who is easier — Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments |
+| 4 | Who is easier, Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments |
 | 5 | Does Odelia Schwartz have reviews mentioning exams? | System should return relevant review excerpts or say not enough information if none mention exams |
 
 ---

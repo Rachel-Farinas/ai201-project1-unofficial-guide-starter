@@ -52,11 +52,13 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
-**Chunk size:**
+**Chunk size:** Limited to a row in a CSV file (both for professor reviews and professor list).
 
-**Overlap:**
+**Overlap:** No overlap as CSV rows are unrelated to each other and self-contained.
 
-**Why these choices fit your documents:**
+**Why these choices fit your documents:** Every professor's list of reviews and the professor's information
+are contained in CSV rows. There is no overlap between pieces of information, so keeping chunking limited
+to what is contained in each row makes the most sense here.
 
 **Final chunk count:**
 

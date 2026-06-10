@@ -92,9 +92,9 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
      Consider: noisy or inconsistent documents, missing source attribution, off-topic
      retrieval, chunks that split key information across boundaries. -->
 
-1.
+1. Short or vague reviews: many RMP comments are 1-2 sentences with little substance (e.g. "great professor"), which may retrieve as top results but not actually answer the query, producing low-quality responses.
 
-2.
+2. Professor name mismatches: if a user queries "Sarkar" instead of "Dilip Sarkar", the retriever may fail to match the chunk metadata, returning no results even when relevant reviews exist.
 
 ---
 
@@ -125,3 +125,48 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
 **Milestone 4 — Embedding and retrieval:**
 
 **Milestone 5 — Generation and interface:**
+
+Here's the full section:
+
+---
+
+## Evaluation Plan
+
+| # | Question | Expected answer |
+|---|----------|-----------------|
+| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough/difficult, recommend the textbook and outside resources |
+| 2 | Would students recommend taking David Chapman? | Yes — reviews describe him as caring and a good lecturer |
+| 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency from his reviews |
+| 4 | Who is easier — Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments |
+| 5 | Does Odelia Schwartz have reviews mentioning exams? | System should return relevant review excerpts or say not enough information if none mention exams |
+
+---
+
+## Anticipated Challenges
+
+1. **Short or vague reviews** — many RMP comments are 1-2 sentences with little substance (e.g. "great professor"), which may retrieve as top results but not actually answer the query, producing low-quality grounded responses.
+2. **Professor name mismatches** — if a user queries "Sarkar" instead of "Dilip Sarkar", the retriever may fail to match the chunk metadata, returning no results even when relevant reviews exist.
+
+---
+
+## Architecture
+
+```
+Document Ingestion     Chunking              Embedding + Vector Store     Retrieval         Generation
+──────────────────     ────────              ────────────────────────     ─────────         ──────────
+professors_list.csv    MAX_CHARS=1000        all-MiniLM-L6-v2             top-k query       Groq
+*_reviews.csv      →   OVERLAP=200       →   sentence-transformers     →  ChromaDB       →  llama-3.3-70b
+(csv.DictReader)       per-review chunks     ChromaDB                     similarity        -versatile
+                                                                           search
+```
+
+---
+
+## AI Tool Plan
+
+| Stage | Tool | Input | Expected output | Verification |
+|-------|------|-------|-----------------|--------------|
+| Chunking | Claude | Chunking Strategy section + current `ingest.py` | `chunk_text()` implementing 1000-char chunks with 200-char overlap | Manually check chunk boundaries on a known review |
+| Embedding + Vector Store | Claude | Architecture section + ChromaDB docs | `embed_and_store()` using `all-MiniLM-L6-v2` and ChromaDB | Query store and confirm reviews are returned |
+| Retrieval | Claude | Retrieval Approach section | `retrieve()` returning top-k chunks with metadata | Run evaluation plan questions and check sources cited |
+| Generation | Claude | System prompt + Grounded Generation section | `generate()` wrapping Groq call with context injection | Confirm model cites `[1]`-style sources and refuses out-of-scope questions |

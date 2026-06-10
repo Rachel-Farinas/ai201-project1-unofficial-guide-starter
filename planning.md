@@ -12,24 +12,29 @@
 <!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
 
 ---
+This system covers student reviews and feedback of CS professors at the University of Miami. 
+This is relevant because many students aren't familiar with professors' teaching style and may
+not personally know anyone who has experience with a certain professor. This system helps bridge that gap by addressing questions on teaching style, exam style, workload, and textbook relevance.
 
 ## Documents
 
 <!-- List your specific sources: URLs, subreddit names, forum threads, or file descriptions.
      Aim for at least 10 sources that together cover different subtopics or perspectives within your domain. -->
 
-| # | Source | Description | URL or location |
-|---|--------|-------------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+Sources include 178 professor CSV files, with each file containing Rate My Professor reviews for that professor and corresponding metadata (Date, Quality, Difficulty, Tags, Course, For Credit, Attendance, Grade, Textbook, Thumbs Up, Thumbs Down). 
+
+Also includes a list of all professors scraped and their metadata (Name, Department, Overall Rating, Number of Ratings, Would Take Again Percent, Level of Difficulty).
+
+| # | Source | Type | URL or file path |
+|---|--------|------|-----------------|
+| 1 | A Fahad_reviews.csv | CSV | ./professor_reviews/documents |
+| 2 | Abdul Hamid Samra_reviews.csv | CSV | ./professor_reviews/documents |
+| 3 | Akmal Younis_reviews.csv | CSV | ./professor_reviews/documents |
+| 4 | Alan Lazer_reviews.csv | CSV | ./professor_reviews/documents |
+| 5 | Alexander Korogodsky_reviews.csv | CSV | ./professor_reviews/documents |
+...
+| 178 | Zheng Wang_reviews.csv | CSV | ./professor_reviews/documents |
+| 179 | professors_list.csv | CSV | ./documents |
 
 ---
 
@@ -40,11 +45,11 @@
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:**
+**Chunk size:** MAX_CHARS = 1000
 
-**Overlap:**
+**Overlap:** OVERLAP_CHARs = 200
 
-**Reasoning:**
+**Reasoning:** Each RMP review is a short, self-contained comment that fits well within 1000 characters alongside its metadata (course, grade, tags). The 200-character overlap is a conservative safeguard for longer reviews that may get split at a boundary, ensuring no context is lost at the cut point.
 
 ---
 
@@ -56,11 +61,11 @@
      would you weigh in choosing a different embedding model — context length, multilingual
      support, accuracy on domain-specific text, latency? -->
 
-**Embedding model:**
+**Embedding model:** all-MiniLM-L6-v2 via sentence-transformers
 
-**Top-k:**
+**Top-k:** 5
 
-**Production tradeoff reflection:**
+**Production tradeoff reflection:** all-MiniLM-L6-v2 is fast and runs locally but has a 256-token context window and was trained on general text, so it may underperform on academic phrasing like "easy grader" or course codes. In production the main tradeoffs would be accuracy on domain-specific text (a model fine-tuned on review-style text would produce better semantic matches), context length (models like text-embedding-3-small support up to 8191 tokens, eliminating most chunking concerns), and latency vs. accuracy. 
 
 ---
 
@@ -73,11 +78,11 @@
 
 | # | Question | Expected answer |
 |---|----------|-----------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough/difficult, recommend the textbook and outside resources |
+| 2 | Would students recommend taking David Chapman? | Yes, reviews describe him as caring and a good lecturer |
+| 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency from his reviews |
+| 4 | Who is easier, Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments |
+| 5 | Does Odelia Schwartz have reviews mentioning exams? | System should return relevant review excerpts or say not enough information if none mention exams |
 
 ---
 
@@ -87,9 +92,9 @@
      Consider: noisy or inconsistent documents, missing source attribution, off-topic
      retrieval, chunks that split key information across boundaries. -->
 
-1.
+1. Short or vague reviews: many RMP comments are 1-2 sentences with little substance (e.g. "great professor"), which may retrieve as top results but not actually answer the query, producing low-quality responses.
 
-2.
+2. Professor name mismatches: if a user queries "Sarkar" instead of "Dilip Sarkar", the retriever may fail to match the chunk metadata, returning no results even when relevant reviews exist.
 
 ---
 
@@ -115,8 +120,10 @@
      "I'll give Claude my Chunking Strategy section and ask it to implement chunk_text()
      with my specified chunk size and overlap" is a plan. -->
 
-**Milestone 3 — Ingestion and chunking:**
 
-**Milestone 4 — Embedding and retrieval:**
-
-**Milestone 5 — Generation and interface:**
+| Stage | Tool | Input | Expected output | Verification |
+|-------|------|-------|-----------------|--------------|
+| Chunking | Claude | Chunking Strategy section + current `ingest.py` | `chunk_text()` implementing 1000-char chunks with 200-char overlap | Manually check chunk boundaries on a known review |
+| Embedding + Vector Store | Claude | Architecture section + ChromaDB docs | `embed_and_store()` using `all-MiniLM-L6-v2` and ChromaDB | Query store and confirm reviews are returned |
+| Retrieval | Claude | Retrieval Approach section | `retrieve()` returning top-k chunks with metadata | Run evaluation plan questions and check sources cited |
+| Generation | Claude | System prompt + Grounded Generation section | `generate()` wrapping Groq call with context injection | Confirm model cites `[1]`-style sources and refuses out-of-scope questions |

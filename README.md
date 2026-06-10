@@ -15,6 +15,9 @@
      course descriptions don't reflect teaching style, exam difficulty, or workload." -->
 
 ---
+This system covers student reviews and feedback of CS professors at the University of Miami. 
+This is relevant because many students aren't familiar with professors' teaching style and may
+not personally know anyone who has experience with a certain professor. This system helps bridge that gap by addressing questions on teaching style, exam style, workload, and textbook relevance.
 
 ## Document Sources
 
@@ -22,18 +25,21 @@
      Be specific: include URLs, subreddit names, forum thread titles, or file names.
      Aim for variety — sources that together cover different subtopics or perspectives. -->
 
+Sources include 178 professor CSV files, with each file containing Rate My Professor reviews for that professor and corresponding metadata (Date, Quality, Difficulty, Tags, Course, For Credit, Attendance, Grade, Textbook, Thumbs Up, Thumbs Down). 
+
+Also includes a list of all professors scraped and their metadata (Name, Department, Overall Rating, Number of Ratings, Would Take Again Percent, Level of Difficulty).
+
+
 | # | Source | Type | URL or file path |
 |---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 | A Fahad_reviews.csv | CSV | ./professor_reviews/documents |
+| 2 | Abdul Hamid Samra_reviews.csv | CSV | ./professor_reviews/documents |
+| 3 | Akmal Younis_reviews.csv | CSV | ./professor_reviews/documents |
+| 4 | Alan Lazer_reviews.csv | CSV | ./professor_reviews/documents |
+| 5 | Alexander Korogodsky_reviews.csv | CSV | ./professor_reviews/documents |
+...
+| 178 | Zheng Wang_reviews.csv | CSV | ./professor_reviews/documents |
+| 179 | professors_list.csv | CSV | ./documents |
 
 ---
 
@@ -46,13 +52,15 @@
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
-**Chunk size:**
+**Chunk size:** Limited to a row in a CSV file (both for professor reviews and professor list).
 
-**Overlap:**
+**Overlap:** No overlap as CSV rows are unrelated to each other and self-contained.
 
-**Why these choices fit your documents:**
+**Why these choices fit your documents:** Every professor's list of reviews and the professor's information
+are contained in CSV rows. There is no overlap between pieces of information, so keeping chunking limited
+to what is contained in each row makes the most sense here.
 
-**Final chunk count:**
+**Final chunk count:** 2157
 
 ---
 
@@ -64,7 +72,7 @@
      Consider: context length limits, multilingual support, accuracy on domain-specific text,
      latency, and local vs. API-hosted. -->
 
-**Model used:**
+**Model used:** all-MiniLM-L6-v2
 
 **Production tradeoff reflection:**
 
@@ -79,9 +87,21 @@
      Do not just say "I told it to use the documents" — show the actual instruction or explain
      the mechanism. -->
 
-**System prompt grounding instruction:**
+**System prompt grounding instruction:** 
 
-**How source attribution is surfaced in the response:**
+You are an advisor that provides advice about which University of Miami professors 
+to take using Rate My Professor reviews.
+
+Rules:
+- Do not use outside information. Only use the information provided to answer questions.
+- If the context doesn't contain the answer, say you don't have enough information to answer.
+- Do not guess an answer if you don't have enough context.
+- Cite the sources you use by their number (e.g., [1]).
+- Be concise and base every claim on the reviews.
+- If a user asks to compare two professors and one professor has no reviews,
+  say you don't have enough information to answer.
+
+**How source attribution is surfaced in the response:** The system prompt instructs the model to cite sources by number (e.g., [1]). Each retrieved chunk passed to the model is numbered and includes the professor name and review metadata as context, so when the model makes a claim it can reference the specific review it drew from. This means a response like "Chapman is known for being approachable [1]" traces directly back to a specific numbered review chunk, not a general impression across all retrieved documents. If no relevant chunks are retrieved above the similarity threshold, the model is instructed to explicitly say it doesn't have enough information rather than fall back on general knowledge.
 
 ---
 

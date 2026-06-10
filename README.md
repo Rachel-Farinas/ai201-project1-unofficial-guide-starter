@@ -60,7 +60,7 @@ Also includes a list of all professors scraped and their metadata (Name, Departm
 are contained in CSV rows. There is no overlap between pieces of information, so keeping chunking limited
 to what is contained in each row makes the most sense here.
 
-**Final chunk count:**
+**Final chunk count:** 2157
 
 ---
 
@@ -72,7 +72,7 @@ to what is contained in each row makes the most sense here.
      Consider: context length limits, multilingual support, accuracy on domain-specific text,
      latency, and local vs. API-hosted. -->
 
-**Model used:**
+**Model used:** all-MiniLM-L6-v2
 
 **Production tradeoff reflection:**
 
@@ -87,9 +87,21 @@ to what is contained in each row makes the most sense here.
      Do not just say "I told it to use the documents" — show the actual instruction or explain
      the mechanism. -->
 
-**System prompt grounding instruction:**
+**System prompt grounding instruction:** 
 
-**How source attribution is surfaced in the response:**
+You are an advisor that provides advice about which University of Miami professors 
+to take using Rate My Professor reviews.
+
+Rules:
+- Do not use outside information. Only use the information provided to answer questions.
+- If the context doesn't contain the answer, say you don't have enough information to answer.
+- Do not guess an answer if you don't have enough context.
+- Cite the sources you use by their number (e.g., [1]).
+- Be concise and base every claim on the reviews.
+- If a user asks to compare two professors and one professor has no reviews,
+  say you don't have enough information to answer.
+
+**How source attribution is surfaced in the response:** The system prompt instructs the model to cite sources by number (e.g., [1]). Each retrieved chunk passed to the model is numbered and includes the professor name and review metadata as context, so when the model makes a claim it can reference the specific review it drew from. This means a response like "Chapman is known for being approachable [1]" traces directly back to a specific numbered review chunk, not a general impression across all retrieved documents. If no relevant chunks are retrieved above the similarity threshold, the model is instructed to explicitly say it doesn't have enough information rather than fall back on general knowledge.
 
 ---
 

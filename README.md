@@ -1,8 +1,8 @@
-## Domain
+﻿## Domain
 
 <!-- What topic or category of knowledge does your system cover?
      Why is this knowledge valuable, and why is it hard to find through official channels?
-     Example: "Student reviews of CS professors at [university] — useful because official
+     Example: "Student reviews of CS professors at [university] â€” useful because official
      course descriptions don't reflect teaching style, exam difficulty, or workload." -->
 
 ---
@@ -14,7 +14,7 @@ not personally know anyone who has experience with a certain professor. This sys
 
 <!-- List every source you collected documents from.
      Be specific: include URLs, subreddit names, forum thread titles, or file names.
-     Aim for variety — sources that together cover different subtopics or perspectives. -->
+     Aim for variety â€” sources that together cover different subtopics or perspectives. -->
 
 Sources include 178 professor CSV files, with each file containing Rate My Professor reviews for that professor and corresponding metadata (Date, Quality, Difficulty, Tags, Course, For Credit, Attendance, Grade, Textbook, Thumbs Up, Thumbs Down). 
 
@@ -67,17 +67,17 @@ to what is contained in each row makes the most sense here.
 
 **Production tradeoff reflection:**
 
-`all-MiniLM-L6-v2` is fast, runs entirely locally, and requires no API key — ideal for development. Its main limitation is a 256-token context window, which means longer reviews that get split at chunk boundaries lose cross-sentence context at the embedding stage. For production I would weigh three tradeoffs: (1) **accuracy on domain-specific text** — a model fine-tuned on review-style or education text would produce tighter semantic matches for informal phrasing like "easy grader" or "curves a lot," where general-purpose embeddings may miss intent; (2) **context length** — a model like `text-embedding-3-small` (8191-token window) would eliminate most chunking concerns for long reviews; (3) **latency vs. quality** — a hosted API embedding model is slower per query and adds cost, but typically outperforms the local 22 M-parameter MiniLM on recall for nuanced queries. For this corpus of short review comments, MiniLM's 256-token window is rarely the bottleneck, so the main production upgrade would be domain fine-tuning or a larger general-purpose model.
+`all-MiniLM-L6-v2` is fast, runs entirely locally, and requires no API key â€” ideal for development. Its main limitation is a 256-token context window, which means longer reviews that get split at chunk boundaries lose cross-sentence context at the embedding stage. For production I would weigh three tradeoffs: (1) **accuracy on domain-specific text** â€” a model fine-tuned on review-style or education text would produce tighter semantic matches for informal phrasing like "easy grader" or "curves a lot," where general-purpose embeddings may miss intent; (2) **context length** â€” a model like `text-embedding-3-small` (8191-token window) would eliminate most chunking concerns for long reviews; (3) **latency vs. quality** â€” a hosted API embedding model is slower per query and adds cost, but typically outperforms the local 22 M-parameter MiniLM on recall for nuanced queries. For this corpus of short review comments, MiniLM's 256-token window is rarely the bottleneck, so the main production upgrade would be domain fine-tuning or a larger general-purpose model.
 
 ---
 
 ## Grounded Generation
 
-<!-- Explain how your system enforces grounding — how does it prevent the LLM from answering
+<!-- Explain how your system enforces grounding â€” how does it prevent the LLM from answering
      beyond the retrieved documents?
      Describe both your system prompt (what instruction you gave the model) and any structural
      choices (e.g., how you formatted the context, whether you filtered low-relevance chunks).
-     Do not just say "I told it to use the documents" — show the actual instruction or explain
+     Do not just say "I told it to use the documents" â€” show the actual instruction or explain
      the mechanism. -->
 
 **System prompt grounding instruction:** 
@@ -101,13 +101,13 @@ Rules:
 ## Evaluation Report
 
 <!-- Run your 5 test questions from planning.md through your system and record the results.
-     Be honest — a partially accurate or inaccurate result that you explain well is more
+     Be honest â€” a partially accurate or inaccurate result that you explain well is more
      valuable than a suspiciously perfect result. -->
 
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough; difficult tests and arbitrary grading mentioned | Confirmed Sarkar's difficulty rating (4.0–5.0 across chunks), quoted "He is difficult, but the material is not" and "difficult tests" and "arbitrary grading"; cited [1], [4], [5] | Relevant | Accurate |
-| 2 | Would students recommend taking David Chapman? | Yes — reviews describe him as caring and a good lecturer | "I don't have enough information to answer. There is no review about David Chapman in the provided context." | Off-target | Inaccurate |
+| 1 | What do students say about Dilip Sarkar's difficulty? | Students consistently describe Sarkar as tough; difficult tests and arbitrary grading mentioned | Confirmed Sarkar's difficulty rating (4.0â€“5.0 across chunks), quoted "He is difficult, but the material is not" and "difficult tests" and "arbitrary grading"; cited [1], [4], [5] | Relevant | Accurate |
+| 2 | Would students recommend taking David Chapman? | Yes â€” reviews describe him as caring and a good lecturer | "I don't have enough information to answer. There is no review about David Chapman in the provided context." | Off-target | Inaccurate |
 | 3 | How do students rate Geoff Sutcliffe's workload? | References to homework load and assignment frequency | Cited difficulty rating of 3.3 and quoted "The course work is tough, but he makes it feel like its no big deal"; acknowledged Sutcliffe is manageable due to his teaching style | Relevant | Partially accurate |
 | 4 | Who is easier, Dilip Sarkar or Blake Rosenberg? | Direct comparison based on difficulty ratings and review comments | "I don't have enough information to answer. There is no review for Blake Rosenberg in the provided context." | Off-target | Accurate (no "Blake Rosenberg" exists in the database; professor is Burton Rosenberg) |
 | 5 | Does Odelia Schwartz have reviews mentioning exams? | Return relevant review excerpts or say not enough info if none mention exams | Found and cited a review stating "her exams are easy if you have paid attention in class" | Relevant | Accurate |
@@ -125,7 +125,7 @@ Rules:
      "The answer was wrong" is not an explanation.
 
      "The relevant information was split across a chunk boundary, so retrieval returned
-     only half the context — the model didn't have enough to answer correctly" is an explanation.
+     only half the context â€” the model didn't have enough to answer correctly" is an explanation.
 
      "The embedding model treated the professor's nickname as out-of-vocabulary and returned
      results from an unrelated review" is an explanation. -->
@@ -143,11 +143,11 @@ Rules:
 ## Spec Reflection
 
 <!-- Reflect on how planning.md shaped your implementation.
-     Answer both questions with at least 2–3 sentences each. -->
+     Answer both questions with at least 2â€“3 sentences each. -->
 
 **One way the spec helped you during implementation:** The Chunking Strategy section gave concrete numbers (MAX_CHARS = 1000, OVERLAP_CHARS = 200) that translated directly into `config.py` constants, removing guesswork about chunk sizing.
 
-**One way your implementation diverged from the spec, and why:** planning.md listed "Blake Rosenberg" for Q4, but the database contains "Burton Rosenberg." The typo was caught only at eval time and highlighted that the system has no fuzzy name matching — an edge case the spec didn't anticipate.
+**One way your implementation diverged from the spec, and why:** planning.md listed "Blake Rosenberg" for Q4, but the database contains "Burton Rosenberg." The typo was caught only at eval time and highlighted that the system has no fuzzy name matching â€” an edge case the spec didn't anticipate.
 
 ---
 
@@ -171,5 +171,5 @@ Rules:
 **Instance 2**
 
 - *What I gave the AI:* The `KeyError: 'Professor'` traceback from `format_context()`, plus `retriever.py` and `generator.py`.
-- *What it produced:* A fix switching `chunk["Professor"]["Name"]` → `chunk["metadata"]["professor"]` and `chunk["Review"]["Comment"]` → `chunk["text"]` to match the flat structure `retrieve()` actually returns.
+- *What it produced:* A fix switching `chunk["Professor"]["Name"]` â†’ `chunk["metadata"]["professor"]` and `chunk["Review"]["Comment"]` â†’ `chunk["text"]` to match the flat structure `retrieve()` actually returns.
 - *What I changed or overrode:* Kept the AI's simultaneous fix of the `lines` list bug, where the original code overwrote `lines` as a string after the loop instead of appending to it.
